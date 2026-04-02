@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 
+	"github.com/opencode-ai/opencode/internal/adhd"
 	"github.com/opencode-ai/opencode/internal/history"
 	"github.com/opencode-ai/opencode/internal/llm/tools"
 	"github.com/opencode-ai/opencode/internal/lsp"
@@ -17,6 +18,7 @@ func CoderAgentTools(
 	messages message.Service,
 	history history.Service,
 	lspClients map[string]*lsp.Client,
+	adhdService *adhd.Service,
 ) []tools.BaseTool {
 	ctx := context.Background()
 	otherTools := GetMcpTools(ctx, permissions)
@@ -36,6 +38,10 @@ func CoderAgentTools(
 			tools.NewPatchTool(lspClients, permissions, history),
 			tools.NewWriteTool(lspClients, permissions, history),
 			NewAgentTool(sessions, messages, lspClients),
+			tools.NewCheckpointTool(adhdService),
+			tools.NewParkSideQuestTool(adhdService),
+			tools.NewFlagDriftTool(adhdService),
+			tools.NewThreadStatusTool(adhdService),
 		}, otherTools...,
 	)
 }

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/opencode-ai/opencode/internal/adhd"
 	"github.com/opencode-ai/opencode/internal/config"
 	"github.com/opencode-ai/opencode/internal/db"
 	"github.com/opencode-ai/opencode/internal/format"
@@ -30,6 +31,8 @@ type App struct {
 
 	CoderAgent agent.Service
 
+	ADHD *adhd.Service
+
 	LSPClients map[string]*lsp.Client
 
 	clientsMutex sync.RWMutex
@@ -44,12 +47,14 @@ func New(ctx context.Context, conn *sql.DB) (*App, error) {
 	sessions := session.NewService(q)
 	messages := message.NewService(q)
 	files := history.NewService(q, conn)
+	adhdService := adhd.NewService(conn)
 
 	app := &App{
 		Sessions:    sessions,
 		Messages:    messages,
 		History:     files,
 		Permissions: permission.NewPermissionService(),
+		ADHD:        adhdService,
 		LSPClients:  make(map[string]*lsp.Client),
 	}
 
@@ -70,6 +75,7 @@ func New(ctx context.Context, conn *sql.DB) (*App, error) {
 			app.Messages,
 			app.History,
 			app.LSPClients,
+			adhdService,
 		),
 	)
 	if err != nil {
